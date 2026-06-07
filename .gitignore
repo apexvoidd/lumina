@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyTorch weights and training checkpoints
+*.pth
+models/
+
+# Dataset files
+dataset.txt
+datasets/
+
+# Active state files
+vocab.json
+training_state.json
+
+# OS files
+.DS_Store
+Thumbs.db

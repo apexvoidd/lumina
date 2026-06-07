@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina - Custom GPT Model from Scratch</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="mood-calm">
+    <div class="ambient-glow"></div>
+    
+    <header>
+        <div class="logo">
+            <span class="icon-orb"><i class="fa-solid fa-brain"></i></span>
+            <h1>LUMINA <span>GPT from Scratch</span></h1>
+        </div>
+        <div class="model-badge" id="model-readiness">
+            <span class="dot"></span> <span class="badge-text">Checking model...</span>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        
+        <!-- LEFT COLUMN: Dataset Management & Training Config -->
+        <div class="left-column-group">
+            
+            <!-- PANEL 1: Dataset Management -->
+            <section class="panel dataset-panel" id="dataset-panel-node">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-database"></i> Dataset Management</h2>
+                    <span class="status-pill idle" id="dataset-load-status">Ready</span>
+                </div>
+                
+                <div class="panel-body">
+                    <!-- Tabs Header -->
+                    <div class="tabs-header">
+                        <button class="tab-btn active" data-tab="hf-tab"><i class="fa-brands fa-hugging-face"></i> Hugging Face</button>
+                        <button class="tab-btn" data-tab="local-tab"><i class="fa-solid fa-file-arrow-up"></i> Local Upload</button>
+                    </div>
+                    
+                    <!-- Tabs Content -->
+                    <div class="tabs-content">
+                        <!-- HF Tab -->
+                        <div class="tab-pane active" id="hf-tab">
+                            <div class="form-row">
+                                <input type="password" id="hf-token" placeholder="Hugging Face API Token (optional / for gated datasets)" class="form-control">
+                            </div>
+                            <div class="form-row inline-form">
+                                <input type="text" id="hf-dataset-name" placeholder="e.g., Amod/mental_health_counseling_conversations" class="form-control">
+                                <button id="btn-fetch-columns" class="btn secondary-sm"><i class="fa-solid fa-arrows-spin"></i> Fetch Columns</button>
+                            </div>
+                            
+                            <!-- Hidden config/subset selector (shown if dataset has configs) -->
+                            <div id="hf-config-row" class="control-group hidden" style="margin-top: 0.5rem; border: 1px dashed var(--theme-color); padding: 0.75rem; border-radius: 0.65rem; background: rgba(var(--theme-color-rgb), 0.03);">
+                                <label for="hf-subset-select" style="font-size: 0.8rem; font-weight: 700; color: var(--theme-color); margin-bottom: 0.4rem;"><i class="fa-solid fa-layer-group"></i> Dataset Subset / Config Detected</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <select id="hf-subset-select" class="form-control" style="flex: 1; padding: 0.4rem 0.65rem;"></select>
+                                    <button id="btn-fetch-subset" class="btn primary-sm" style="padding: 0.4rem 1rem; border-radius: 0.5rem; font-size: 0.8rem;"><i class="fa-solid fa-arrows-spin"></i> Fetch Subset</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Hidden mapping options (shown after columns are fetched) -->
+                            <div id="hf-mapping-options" class="hf-mapping-options hidden">
+                                <div class="control-group">
+                                    <label for="hf-mapping-type">Dataset Format</label>
+                                    <select id="hf-mapping-type" class="form-control">
+                                        <option value="pairs">Prompt / Response Pairs (2 columns)</option>
+                                        <option value="list">Dialogue Turn List (1 column, list value)</option>
+                                        <option value="raw">Raw Text Lines (1 column, text value)</option>
+                                        <option value="plain">Plain Text (no dialogue formatting)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mapping-fields-row" id="mapping-pairs-row">
+                                    <div class="control-group">
+                                        <label for="hf-user-column">User Speech Column</label>
+                                        <select id="hf-user-column" class="form-control"></select>
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="hf-ai-column">AI Response Column</label>
+                                        <select id="hf-ai-column" class="form-control"></select>
+                                    </div>
+                                </div>
+                                
+                                <div class="mapping-fields-row hidden" id="mapping-list-row">
+                                    <div class="control-group">
+                                        <label for="hf-list-column">Dialogue List Column</label>
+                                        <select id="hf-list-column" class="form-control"></select>
+                                    </div>
+                                </div>
+                                
+                                <div class="mapping-fields-row hidden" id="mapping-raw-row">
+                                    <div class="control-group">
+                                        <label for="hf-raw-column">Raw Text Column</label>
+                                        <select id="hf-raw-column" class="form-control"></select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="control-group">
+                                        <label for="hf-dataset-limit">Limit Exchanges</label>
+                                        <input type="number" id="hf-dataset-limit" value="2000" min="100" max="10000" class="form-control">
+                                    </div>
+                                    <button id="btn-load-hf-dataset" class="btn primary-sm"><i class="fa-solid fa-download"></i> Load & Format</button>
+                                </div>
+                                
+                                <div class="preview-box">
+                                    <span class="preview-title">Sample Data Preview:</span>
+                                    <pre id="hf-data-preview">No preview loaded.</pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Local Tab -->
+                        <div class="tab-pane" id="local-tab">
+                            <div class="drag-drop-area" id="drop-zone">
+                                <i class="fa-solid fa-file-lines drag-icon"></i>
+                                <p>Drag & drop your custom <strong>.txt</strong> dataset here</p>
+                                <span>or click to browse files</span>
+                                <input type="file" id="local-file-input" accept=".txt" class="hidden">
+                            </div>
+                            <div class="local-upload-help">
+                                <small>Format: Dialogue lines should start with <strong>User:</strong> and <strong>AI:</strong> alternatively, or contain plain text lines.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- PANEL 2: Hyperparameters & Training -->
+            <section class="panel training-panel" id="training-panel-node">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-sliders"></i> Hyperparameters & Training</h2>
+                    <span class="status-pill idle" id="training-status">Idle</span>
+                </div>
+                
+                <div class="panel-body">
+                    <!-- Model Manager Section -->
+                    <div class="model-manager-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 0.5rem;">
+                        <div class="control-group">
+                            <label for="select-model"><i class="fa-solid fa-brain"></i> Active Model</label>
+                            <select id="select-model" class="form-control">
+                                <option value="default">default</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="txt-new-model"><i class="fa-solid fa-plus"></i> Create Model</label>
+                            <div style="display: flex; gap: 0.4rem;">
+                                <input type="text" id="txt-new-model" placeholder="New model name..." class="form-control" style="flex: 1; padding: 0.5rem 0.75rem;">
+                                <button id="btn-create-model" class="btn secondary-sm" style="padding: 0 0.75rem; border-radius: 0.65rem;"><i class="fa-solid fa-check"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Config Form -->
+                    <div class="config-grid">
+                        <div class="control-group">
+                            <label for="n_embd">Embedding Size <span class="value-display" id="embd-val">64</span></label>
+                            <input type="range" id="n_embd" min="32" max="128" step="16" value="64">
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="n_head">Attention Heads <span class="value-display" id="head-val">4</span></label>
+                            <input type="range" id="n_head" min="2" max="8" step="2" value="4">
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="n_layer">Transformer Layers <span class="value-display" id="layer-val">4</span></label>
+                            <input type="range" id="n_layer" min="2" max="8" step="1" value="4">
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="max_iters">Training Epochs <span class="value-display" id="iters-val">800</span></label>
+                            <input type="range" id="max_iters" min="100" max="2000" step="100" value="800">
+                        </div>
+                        
+                        <div class="control-group" style="grid-column: span 2; margin-top: 0.4rem;">
+                            <label for="select-dataset"><i class="fa-solid fa-database"></i> Selected Training Dataset</label>
+                            <select id="select-dataset" class="form-control">
+                                <option value="">No datasets found (Load/upload one first)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="control-group" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; gap: 0.6rem; margin-top: 0.2rem;">
+                            <input type="checkbox" id="chk-start-fresh" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--theme-color);">
+                            <label for="chk-start-fresh" style="cursor: pointer; margin-bottom: 0; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Start Fresh (Reset weights and train model from scratch)</label>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button id="btn-start-train" class="btn primary"><i class="fa-solid fa-play"></i> Start Training</button>
+                        <button id="btn-stop-train" class="btn secondary" disabled><i class="fa-solid fa-stop"></i> Stop</button>
+                        <button id="btn-export-model" class="btn secondary" title="Export Model as Zip Package"><i class="fa-solid fa-file-zipper"></i> Export</button>
+                    </div>
+
+                    <!-- Training Metrics -->
+                    <div class="metrics-row">
+                        <div class="metric-card">
+                            <span class="metric-label">Current Loss</span>
+                            <span class="metric-value" id="metric-loss">--</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Progress</span>
+                            <span class="metric-value" id="metric-progress">0%</span>
+                        </div>
+                        <div class="metric-card">
+                            <span class="metric-label">Speed</span>
+                            <span class="metric-value" id="metric-speed">-- it/s</span>
+                        </div>
+                    </div>
+
+                    <!-- Loss Chart -->
+                    <div class="chart-container">
+                        <canvas id="lossChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- RIGHT PANEL: Chat & Voice -->
+        <section class="panel chat-panel" id="chat-panel-node">
+            <div class="panel-header">
+                <h2><i class="fa-solid fa-comment-dots"></i> Conversation Companion</h2>
+                <div class="mood-badge" id="ai-mood">
+                    Mood: <span id="mood-text">Calm</span>
+                </div>
+            </div>
+
+            <div class="panel-body">
+                <!-- Visualizer and Orb -->
+                <div class="visualizer-container">
+                    <div class="glow-orb" id="glow-orb"></div>
+                    <canvas id="waveVisualizer"></canvas>
+                </div>
+
+                <!-- Settings & Voices -->
+                <div class="chat-settings">
+                    <div class="voice-select-wrapper">
+                        <label for="voice-select"><i class="fa-solid fa-volume-high"></i> Voice:</label>
+                        <select id="voice-select" class="form-control">
+                            <option value="">Detecting System Voices...</option>
+                        </select>
+                    </div>
+                    <div class="temp-control-wrapper">
+                        <label for="temperature">Temp: <span id="temp-val">0.8</span></label>
+                        <input type="range" id="temperature" min="0.2" max="1.5" step="0.1" value="0.8">
+                    </div>
+                    <div class="settings-toggles">
+                        <button id="toggle-voice-out" class="icon-toggle active" title="Toggle Voice Output"><i class="fa-solid fa-microphone-lines"></i></button>
+                    </div>
+                </div>
+
+                <!-- Chat Transcript -->
+                <div class="chat-transcript" id="chat-transcript">
+                    <div class="message system-message">
+                        <div class="message-content">
+                            Welcome! Lumina is a GPT model coded from scratch in PyTorch. Click <strong>Start Training</strong> on the left to teach her to speak. Once trained, talk to her here!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input Controls -->
+                <div class="chat-input-area">
+                    <button id="btn-mic" class="btn-mic" title="Speak to Lumina">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                    <input type="text" id="chat-input" placeholder="Type a message or click mic to talk..." disabled>
+                    <button id="btn-send" class="btn-send" disabled><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Built with <i class="fa-solid fa-heart" style="color: var(--theme-color);"></i> from scratch in PyTorch | Causal Multi-Head Self-Attention Network</p>
+    </footer>
+
+    <!-- App JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
